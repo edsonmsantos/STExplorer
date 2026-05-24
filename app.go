@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -75,7 +78,8 @@ func (a *App) session(serverID string) (*SFTPSession, error) {
 // GetServers returns the list of configured servers WITHOUT their secrets.
 // The plaintext password / passphrase never leaves Go — the UI shows blank
 // fields by default, and an empty value on save means "keep the current
-// secret".
+// secret". HighThroughput is materialized so the UI always sees a definite
+// bool (default true for legacy entries with no field).
 func (a *App) GetServers() ([]ServerConfig, error) {
 	configs, err := a.configManager.LoadConfigs()
 	if err != nil {
@@ -84,6 +88,10 @@ func (a *App) GetServers() ([]ServerConfig, error) {
 	for i := range configs {
 		configs[i].Password = ""
 		configs[i].Passphrase = ""
+		if configs[i].HighThroughput == nil {
+			t := true
+			configs[i].HighThroughput = &t
+		}
 	}
 	return configs, nil
 }
@@ -261,6 +269,7 @@ func (a *App) DownloadFile(serverID, remotePath, fileName string) error {
 	id := a.nextTransferID()
 	cb := a.progressCallback(id, "download", fileName)
 	err = s.DownloadFile(remotePath, localPath, cb)
+	err = a.maybeFallbackToSafeMode(serverID, err)
 	a.emitProgress(TransferEvent{
 		ID: id, Direction: "download", FileName: fileName, Done: true,
 		Error: errString(err),
@@ -281,7 +290,7 @@ func (a *App) UploadFile(serverID, remoteDir string) error {
 		return err
 	}
 
-	return a.uploadOne(s, localPath, remoteDir)
+	return a.uploadOne(s, serverID, localPath, remoteDir)
 }
 
 // PasteFromClipboard reads file paths from the system clipboard and uploads
@@ -308,14 +317,14 @@ func (a *App) UploadFiles(serverID, remoteDir string, localPaths []string) error
 		return err
 	}
 	for _, p := range localPaths {
-		if err := a.uploadOne(s, p, remoteDir); err != nil {
+		if err := a.uploadOne(s, serverID, p, remoteDir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (a *App) uploadOne(s *SFTPSession, localPath, remoteDir string) error {
+func (a *App) uploadOne(s *SFTPSession, serverID, localPath, remoteDir string) error {
 	name := filepath.Base(localPath)
 	remotePath := path.Join(remoteDir, name)
 	if remoteDir == "/" {
@@ -325,6 +334,7 @@ func (a *App) uploadOne(s *SFTPSession, localPath, remoteDir string) error {
 	id := a.nextTransferID()
 	cb := a.progressCallback(id, "upload", name)
 	err := s.UploadFile(localPath, remotePath, cb)
+	err = a.maybeFallbackToSafeMode(serverID, err)
 	a.emitProgress(TransferEvent{
 		ID: id, Direction: "upload", FileName: name, Done: true,
 		Error: errString(err),
@@ -342,11 +352,78 @@ func (a *App) CopyFile(serverID, srcPath, dstPath string) error {
 	id := a.nextTransferID()
 	cb := a.progressCallback(id, "copy", name)
 	err = s.CopyRemote(srcPath, dstPath, cb)
+	err = a.maybeFallbackToSafeMode(serverID, err)
 	a.emitProgress(TransferEvent{
 		ID: id, Direction: "copy", FileName: name, Done: true,
 		Error: errString(err),
 	})
 	return err
+}
+
+// isConnectionDead matches error strings that pkg/sftp / net surface when
+// the server kills the SSH connection mid-transfer (often because we pushed
+// a packet bigger than the server tolerates). It's a heuristic; false
+// positives are tolerable since we only flip a per-server flag.
+func isConnectionDead(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	s := err.Error()
+	for _, marker := range []string{
+		"EOF",
+		"broken pipe",
+		"connection reset",
+		"use of closed network connection",
+		"connection lost",
+		"unexpected packet",
+	} {
+		if strings.Contains(s, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// maybeFallbackToSafeMode inspects an error from a transfer operation. If
+// the connection died AND the server is currently in high-throughput mode,
+// flip the flag to false (persisted), close the dead session so the next
+// op forces a reconnect at safe limits, and tell the frontend so it can
+// surface a clear message.
+func (a *App) maybeFallbackToSafeMode(serverID string, opErr error) error {
+	if !isConnectionDead(opErr) {
+		return opErr
+	}
+
+	configs, _ := a.configManager.LoadConfigs()
+	var target *ServerConfig
+	for i := range configs {
+		if configs[i].ID == serverID {
+			target = &configs[i]
+			break
+		}
+	}
+	if target == nil || !target.UseHighThroughput() {
+		return opErr
+	}
+
+	_ = a.configManager.SetHighThroughput(serverID, false)
+
+	a.sessionMu.Lock()
+	if s, ok := a.sessions[serverID]; ok {
+		s.Close()
+		delete(a.sessions, serverID)
+	}
+	a.sessionMu.Unlock()
+
+	if a.ctx != nil {
+		wailsruntime.EventsEmit(a.ctx, "server:highThroughputDisabled", serverID)
+	}
+
+	return fmt.Errorf("the server killed the connection (it likely doesn't support large SFTP packets). " +
+		"Switched this server to safe mode automatically — please reconnect and try again")
 }
 
 func errString(err error) string {

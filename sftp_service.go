@@ -201,7 +201,24 @@ func ConnectSFTP(config ServerConfig) (*SFTPSession, error) {
 		return nil, fmt.Errorf("failed to dial ssh: %w", err)
 	}
 
-	client, err := sftp.NewClient(conn)
+	// Throughput tuning. In high-throughput mode (default) we use 256 KB
+	// packets and a wider concurrency window — modern OpenSSH-based servers
+	// handle this fine and it's the difference between ~10 MB/s and saturating
+	// the link on high-RTT routes. Some restricted SFTP services (e.g. Hetzner
+	// Storage Box) drop the connection when sent >32 KB payloads; in that case
+	// the upload error handler flips the server's HighThroughput flag to false
+	// and the next reconnect lands in safe mode.
+	opts := []sftp.ClientOption{
+		sftp.UseConcurrentReads(true),
+		sftp.UseConcurrentWrites(true),
+	}
+	if config.UseHighThroughput() {
+		opts = append(opts,
+			sftp.MaxPacketUnchecked(256*1024),
+			sftp.MaxConcurrentRequestsPerFile(128),
+		)
+	}
+	client, err := sftp.NewClient(conn, opts...)
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to create sftp client: %w", err)

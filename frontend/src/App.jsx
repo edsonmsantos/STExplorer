@@ -192,11 +192,25 @@ function App() {
     useEffect(() => {
         const refresh = () => refreshDeepest();
         const onErr = (msg) => setError('Upload from drop failed: ' + msg);
+        const onSafeMode = (serverId) => {
+            loadServers();
+            if (currentServer?.id === serverId) {
+                setError(
+                    "The server killed the connection — it doesn't support large SFTP packets. " +
+                    "Switched this server to safe mode automatically. Click it in the sidebar to reconnect."
+                );
+                setCurrentServer(null);
+                setColumns([]);
+                setFocused(null);
+            }
+        };
         EventsOn('drop:done', refresh);
         EventsOn('drop:error', onErr);
+        EventsOn('server:highThroughputDisabled', onSafeMode);
         return () => {
             EventsOff('drop:done');
             EventsOff('drop:error');
+            EventsOff('server:highThroughputDisabled');
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentServer, columns]);

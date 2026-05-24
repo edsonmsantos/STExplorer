@@ -16,6 +16,22 @@ type ServerConfig struct {
 	Password       string `json:"password,omitempty"`
 	PrivateKeyPath string `json:"privateKeyPath,omitempty"`
 	Passphrase     string `json:"passphrase,omitempty"`
+	// HighThroughput enables 256 KB SFTP packets and a wider concurrency
+	// window. Default is true (most modern SSH servers support it). When a
+	// connection-lost error occurs during a transfer we flip it to false
+	// automatically so retries use the spec-safe 32 KB packets.
+	// Pointer so legacy JSON entries without the field can be detected and
+	// defaulted to true.
+	HighThroughput *bool `json:"highThroughput,omitempty"`
+}
+
+// UseHighThroughput reports the effective value — defaulting to true when
+// the field is absent (new servers, or upgrades from older versions).
+func (c *ServerConfig) UseHighThroughput() bool {
+	if c.HighThroughput == nil {
+		return true
+	}
+	return *c.HighThroughput
 }
 
 type ConfigManager struct {
@@ -155,6 +171,26 @@ func (cm *ConfigManager) Upsert(s ServerConfig) (ServerConfig, error) {
 		return ServerConfig{}, err
 	}
 	return s, nil
+}
+
+// SetHighThroughput updates the flag for a single server, persisting
+// without touching any other field (in particular, encrypted secrets are
+// preserved as-is).
+func (cm *ConfigManager) SetHighThroughput(id string, enabled bool) error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	configs, err := cm.loadLocked()
+	if err != nil {
+		return err
+	}
+	for i := range configs {
+		if configs[i].ID == id {
+			configs[i].HighThroughput = &enabled
+			return cm.saveLocked(configs)
+		}
+	}
+	return nil
 }
 
 func (cm *ConfigManager) Delete(id string) error {
