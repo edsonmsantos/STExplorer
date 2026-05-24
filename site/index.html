@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ST Explorer — SFTP, made beautiful.</title>
+    <meta name="description" content="A native SFTP client for Windows with Finder-style columns, built-in SSH terminal, and effortless transfers. Open source, ~12 MB, no telemetry." />
+
+    <link rel="icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <link rel="canonical" href="https://stexplorer.stivetec.com" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ST Explorer — SFTP, made beautiful." />
+    <meta property="og:description" content="A native SFTP client for Windows. Finder-style columns. Built-in SSH terminal. Effortless transfers." />
+    <meta property="og:url" content="https://stexplorer.stivetec.com" />
+    <meta property="og:image" content="https://stexplorer.stivetec.com/assets/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="preconnect" href="https://github.com" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <!-- Sticky top nav -->
+    <nav class="topnav" id="topnav">
+        <div class="topnav-inner">
+            <a href="#top" class="topnav-brand">
+                <img src="assets/logo.png" alt="" width="28" height="28" />
+                <span>ST Explorer</span>
+            </a>
+            <div class="topnav-links">
+                <a href="#views">Views</a>
+                <a href="#terminal">Terminal</a>
+                <a href="#transfers">Transfers</a>
+                <a href="#download" class="topnav-cta">Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- ============== HERO ============== -->
+        <section id="top" class="hero">
+            <div class="ambient ambient-blue"></div>
+            <div class="ambient ambient-purple"></div>
+            <div class="ambient ambient-cyan"></div>
+
+            <div class="hero-content reveal">
+                <p class="eyebrow">Open source · Windows · Native</p>
+                <h1>SFTP,<br /><span class="gradient-text">made beautiful</span>.</h1>
+                <p class="lead">
+                    A native SFTP client with a Finder-style column view,
+                    built-in SSH terminal, and the modern UX server software forgot.
+                </p>
+                <div class="cta-row">
+                    <a href="#download" class="btn btn-primary">Download for Windows</a>
+                    <a href="https://github.com/edsonsantos/STExplorer" class="btn btn-ghost" target="_blank" rel="noopener">
+                        View on GitHub
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                            <path d="M5.5 3.5 10 8l-4.5 4.5L4.4 11.4 7.8 8 4.4 4.6Z" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-image reveal reveal-delay">
+                <div class="screenshot screenshot-shadow screenshot-hero">
+                    <img src="assets/screenshots/hero.png" alt="ST Explorer column view" onerror="this.style.display='none'" />
+                    <div class="screenshot-fallback">
+                        <div class="fb-title">hero.png</div>
+                        <div class="fb-spec">Suggested: column view with files open · 1600 × 1000</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== VIEWS ============== -->
+        <section id="views" class="section">
+            <div class="container narrow center reveal">
+                <p class="eyebrow">Three views</p>
+                <h2>Browse the way you think.</h2>
+                <p class="section-lead">
+                    Icons for visual scanning. List for sorting and details.
+                    Columns for drilling deep into the tree — the macOS classic, on Windows.
+                </p>
+            </div>
+
+            <div class="container view-grid">
+                <article class="view-card glass reveal">
+                    <div class="screenshot screenshot-mini">
+                        <img src="assets/screenshots/view-icons.png" alt="Icons view" onerror="this.style.display='none'" />
+                        <div class="screenshot-fallback small">
+                            <div class="fb-title">view-icons.png</div>
+                            <div class="fb-spec">1200 × 800</div>
+                        </div>
+                    </div>
+                    <div class="view-card-body">
+                        <h3>Icons</h3>
+                        <p>Grid of folders and files with selection chips and quick tooltips.</p>
+                    </div>
+                </article>
+
+                <article class="view-card glass reveal reveal-delay">
+                    <div class="screenshot screenshot-mini">
+                        <img src="assets/screenshots/view-list.png" alt="List view" onerror="this.style.display='none'" />
+                        <div class="screenshot-fallback small">
+                            <div class="fb-title">view-list.png</div>
+                            <div class="fb-spec">1200 × 800</div>
+                        </div>
+                    </div>
+                    <div class="view-card-body">
+                        <h3>List</h3>
+                        <p>Sortable columns: name, modified, size, kind. Alternating rows, header sort indicators.</p>
+                    </div>
+                </article>
+
+                <article class="view-card glass reveal reveal-delay-2">
+                    <div class="screenshot screenshot-mini">
+                        <img src="assets/screenshots/view-columns.png" alt="Columns view" onerror="this.style.display='none'" />
+                        <div class="screenshot-fallback small">
+                            <div class="fb-title">view-columns.png</div>
+                            <div class="fb-spec">1200 × 800</div>
+                        </div>
+                    </div>
+                    <div class="view-card-body">
+                        <h3>Columns</h3>
+                        <p>Miller columns straight from Finder. Drill down without losing context.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- ============== TERMINAL ============== -->
+        <section id="terminal" class="section section-dark">
+            <div class="ambient ambient-purple ambient-dim"></div>
+            <div class="ambient ambient-blue ambient-dim ambient-right"></div>
+
+            <div class="container split">
+                <div class="split-text reveal">
+                    <p class="eyebrow eyebrow-dark">Integrated terminal</p>
+                    <h2>A terminal that<br />follows you.</h2>
+                    <p>
+                        Click the terminal icon and a tabbed SSH shell drops in,
+                        rooted at the folder you're already browsing.
+                    </p>
+                    <ul class="feature-list">
+                        <li>Multiple tabs on the same connection</li>
+                        <li>Full ANSI + 256-color, xterm-compatible</li>
+                        <li>Auto-resizes with the panel</li>
+                        <li>Powered by xterm.js</li>
+                    </ul>
+                </div>
+                <div class="split-image reveal reveal-delay">
+                    <div class="screenshot screenshot-shadow">
+                        <img src="assets/screenshots/terminal.png" alt="ST Explorer with terminal panel open" onerror="this.style.display='none'" />
+                        <div class="screenshot-fallback dark">
+                            <div class="fb-title">terminal.png</div>
+                            <div class="fb-spec">Suggested: panel open, multiple tabs · 1600 × 900</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== TRANSFERS ============== -->
+        <section id="transfers" class="section">
+            <div class="container split split-reverse">
+                <div class="split-image reveal">
+                    <div class="screenshot screenshot-shadow">
+                        <img src="assets/screenshots/transfers.png" alt="Drag and drop file upload with transfer panel" onerror="this.style.display='none'" />
+                        <div class="screenshot-fallback">
+                            <div class="fb-title">transfers.png</div>
+                            <div class="fb-spec">Suggested: drop overlay + progress panel · 1400 × 900</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="split-text reveal reveal-delay">
+                    <p class="eyebrow">Transfers</p>
+                    <h2>Drag. Drop.<br />Done.</h2>
+                    <p>
+                        Drop files from Windows Explorer straight into any remote folder.
+                        Or hit <kbd>Ctrl</kbd>+<kbd>C</kbd> on a file in Explorer, then
+                        <kbd>Ctrl</kbd>+<kbd>V</kbd> here — it just uploads.
+                    </p>
+                    <ul class="feature-list">
+                        <li>Drag-and-drop from any file manager</li>
+                        <li>Native clipboard integration (CF_HDROP)</li>
+                        <li>Server-side copy for remote-to-remote moves</li>
+                        <li>Live progress panel for every transfer</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== SPECS ============== -->
+        <section class="section section-tinted">
+            <div class="container center narrow reveal">
+                <p class="eyebrow">Why ST Explorer</p>
+                <h2>Built like a desktop app should be.</h2>
+            </div>
+            <div class="container stats-grid">
+                <div class="stat glass reveal">
+                    <div class="stat-value">~12<span class="stat-unit"> MB</span></div>
+                    <div class="stat-label">Single .exe. No installer. No bundled Chromium.</div>
+                </div>
+                <div class="stat glass reveal reveal-delay">
+                    <div class="stat-value">Native</div>
+                    <div class="stat-label">Go backend, WebView2 frontend. Wails v2.</div>
+                </div>
+                <div class="stat glass reveal reveal-delay-2">
+                    <div class="stat-value">MIT</div>
+                    <div class="stat-label">Open source. No telemetry. No phone-home.</div>
+                </div>
+                <div class="stat glass reveal reveal-delay-3">
+                    <div class="stat-value">SSH<span class="stat-unit"> + Key</span></div>
+                    <div class="stat-label">Host key pinning via known_hosts (TOFU).</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== KEYBOARD ============== -->
+        <section class="section">
+            <div class="container narrow center reveal">
+                <p class="eyebrow">Keyboard-first</p>
+                <h2>Every shortcut you'd expect.</h2>
+                <p class="section-lead">
+                    Because reaching for the mouse to rename a file is a tax we already pay enough.
+                </p>
+            </div>
+            <div class="container shortcut-grid reveal reveal-delay">
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Enter</kbd></div>
+                    <div class="shortcut-label">Open file / enter folder</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>F2</kbd></div>
+                    <div class="shortcut-label">Rename</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Del</kbd></div>
+                    <div class="shortcut-label">Move to trash</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Backspace</kbd></div>
+                    <div class="shortcut-label">Back / collapse column</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>C</kbd></div>
+                    <div class="shortcut-label">Copy</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>X</kbd></div>
+                    <div class="shortcut-label">Cut</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>V</kbd></div>
+                    <div class="shortcut-label">Paste (internal or system)</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-keys"><kbd>Ctrl</kbd><kbd>F</kbd></div>
+                    <div class="shortcut-label">Filter current folder</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== DOWNLOAD CTA ============== -->
+        <section id="download" class="section section-dark cta-section">
+            <div class="ambient ambient-blue ambient-dim"></div>
+            <div class="ambient ambient-purple ambient-dim ambient-right"></div>
+
+            <div class="container narrow center reveal">
+                <h2>Get ST Explorer.</h2>
+                <p class="section-lead">Free. Open source. Ready today.</p>
+                <div class="cta-row centered">
+                    <a href="https://github.com/edsonsantos/STExplorer/releases/latest" class="btn btn-primary btn-large" target="_blank" rel="noopener">
+                        Download for Windows
+                    </a>
+                    <a href="https://github.com/edsonsantos/STExplorer" class="btn btn-ghost btn-ghost-dark btn-large" target="_blank" rel="noopener">
+                        Build from source
+                    </a>
+                </div>
+                <p class="small-print">
+                    Requires Windows 10 / 11 with WebView2. Compatible with macOS and Linux through Wails (build from source).
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <img src="assets/logo.png" alt="" width="24" height="24" />
+                <span>ST Explorer</span>
+            </div>
+            <nav class="footer-links">
+                <a href="https://github.com/edsonsantos/STExplorer" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/edsonsantos/STExplorer/releases" target="_blank" rel="noopener">Releases</a>
+                <a href="https://github.com/edsonsantos/STExplorer/issues" target="_blank" rel="noopener">Report issue</a>
+                <a href="https://github.com/edsonsantos/STExplorer#security" target="_blank" rel="noopener">Security</a>
+            </nav>
+            <p class="footer-meta">
+                Made by <a href="https://stivetec.com" target="_blank" rel="noopener">Stivetec</a>. Licensed MIT.
+            </p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# ============================================================
+# Sensitive files — NEVER commit these
+# ============================================================
+# Contains plaintext passwords / private key paths
+servers.json
+**/servers.json
+known_hosts
+
+# Local environment / secrets
+.env
+.env.*
+*.pem
+*.key
+*.ppk
+id_rsa*
+id_ed25519*
+
+# ============================================================
+# Build artifacts
+# ============================================================
+build/bin/
+build/darwin/build/
+frontend/dist/
+frontend/node_modules/
+
+# Wails dev cache
+frontend/package.json.md5
+wailsjs-dev/
+
+# Stray executables at repo root (dev artifacts)
+/*.exe
+/*.bin
+/*.dmg
+/*.app
+
+# Go binaries
+*.exe
+*.test
+*.out
+*.prof
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ============================================================
+# OS / IDE
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ============================================================
+# Local Claude/agent state (keep prompts shareable but not state)
+# ============================================================
+.claude/
