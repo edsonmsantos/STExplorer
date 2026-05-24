@@ -48,6 +48,27 @@ func (cm *ConfigManager) loadLocked() ([]ServerConfig, error) {
 		return nil, fmt.Errorf("failed to unmarshal config data: %w", err)
 	}
 
+	// Auto-migrate legacy plaintext secrets to encrypted form. Done once,
+	// silently — saves the file back so the plaintext is replaced ASAP.
+	migrated := false
+	for i := range configs {
+		if configs[i].Password != "" && !isEncrypted(configs[i].Password) {
+			if enc, err := EncryptSecret(configs[i].Password); err == nil {
+				configs[i].Password = enc
+				migrated = true
+			}
+		}
+		if configs[i].Passphrase != "" && !isEncrypted(configs[i].Passphrase) {
+			if enc, err := EncryptSecret(configs[i].Passphrase); err == nil {
+				configs[i].Passphrase = enc
+				migrated = true
+			}
+		}
+	}
+	if migrated {
+		_ = cm.saveLocked(configs)
+	}
+
 	return configs, nil
 }
 
@@ -71,6 +92,9 @@ func (cm *ConfigManager) saveLocked(configs []ServerConfig) error {
 }
 
 // Upsert inserts or replaces a server by ID. If ID is empty a new one is assigned.
+// Sensitive fields are encrypted before storage. Empty Password/Passphrase on
+// an existing record means "keep the current secret" (the UI hides stored
+// secrets, so a blank field should never wipe what we already have).
 // Returns the stored config (with ID populated).
 func (cm *ConfigManager) Upsert(s ServerConfig) (ServerConfig, error) {
 	cm.mu.Lock()
@@ -83,6 +107,36 @@ func (cm *ConfigManager) Upsert(s ServerConfig) (ServerConfig, error) {
 
 	if s.ID == "" {
 		s.ID = nextID(configs)
+	}
+
+	// Find existing record (if any) so we can preserve secrets the form
+	// didn't include.
+	var existing *ServerConfig
+	for i := range configs {
+		if configs[i].ID == s.ID {
+			existing = &configs[i]
+			break
+		}
+	}
+
+	if s.Password == "" && existing != nil {
+		s.Password = existing.Password // already encrypted
+	} else if s.Password != "" {
+		enc, err := EncryptSecret(s.Password)
+		if err != nil {
+			return ServerConfig{}, fmt.Errorf("failed to encrypt password: %w", err)
+		}
+		s.Password = enc
+	}
+
+	if s.Passphrase == "" && existing != nil {
+		s.Passphrase = existing.Passphrase
+	} else if s.Passphrase != "" {
+		enc, err := EncryptSecret(s.Passphrase)
+		if err != nil {
+			return ServerConfig{}, fmt.Errorf("failed to encrypt passphrase: %w", err)
+		}
+		s.Passphrase = enc
 	}
 
 	replaced := false

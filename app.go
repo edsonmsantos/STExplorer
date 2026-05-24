@@ -72,8 +72,39 @@ func (a *App) session(serverID string) (*SFTPSession, error) {
 
 // ---------- Server CRUD ----------
 
+// GetServers returns the list of configured servers WITHOUT their secrets.
+// The plaintext password / passphrase never leaves Go — the UI shows blank
+// fields by default, and an empty value on save means "keep the current
+// secret".
 func (a *App) GetServers() ([]ServerConfig, error) {
-	return a.configManager.LoadConfigs()
+	configs, err := a.configManager.LoadConfigs()
+	if err != nil {
+		return nil, err
+	}
+	for i := range configs {
+		configs[i].Password = ""
+		configs[i].Passphrase = ""
+	}
+	return configs, nil
+}
+
+// HasSecret reports whether the stored server has a saved password or
+// passphrase. Used by the edit form to display the "(saved)" hint without
+// ever sending the value to the frontend.
+func (a *App) HasSecret(serverID string) (map[string]bool, error) {
+	configs, err := a.configManager.LoadConfigs()
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range configs {
+		if c.ID == serverID {
+			return map[string]bool{
+				"password":   c.Password != "",
+				"passphrase": c.Passphrase != "",
+			}, nil
+		}
+	}
+	return map[string]bool{}, nil
 }
 
 // SaveServer inserts or updates a server. Empty ID creates a new entry.
@@ -111,7 +142,17 @@ func (a *App) ConnectToServer(serverID string) (string, error) {
 		return "", fmt.Errorf("server not found: %s", serverID)
 	}
 
-	session, err := ConnectSFTP(*target)
+	// Decrypt secrets right before they hit the SSH client. The plaintext
+	// only exists in the local stack frame and dies with this call.
+	decrypted := *target
+	if decrypted.Password, err = DecryptSecret(decrypted.Password); err != nil {
+		return "", fmt.Errorf("failed to decrypt password: %w", err)
+	}
+	if decrypted.Passphrase, err = DecryptSecret(decrypted.Passphrase); err != nil {
+		return "", fmt.Errorf("failed to decrypt passphrase: %w", err)
+	}
+
+	session, err := ConnectSFTP(decrypted)
 	if err != nil {
 		return "", err
 	}

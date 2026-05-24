@@ -122,7 +122,7 @@ wails dev
 
 ## Security
 
-- **Credentials** in `servers.json` are stored in plain text. Treat the file like a password manager export — restrict file permissions and don't commit it. *(This will move to OS-level secure storage in a future release.)*
+- **Credentials at rest** — passwords and key passphrases in `servers.json` are encrypted before being written to disk. On Windows the encryption uses **DPAPI** (`CryptProtectData`), which binds the ciphertext to your Windows user account — even an attacker with the file can't decrypt it without your login session. On macOS / Linux the app falls back to AES-256-GCM with a per-user key file kept at `~/.config/Explorer/key` (0600). Legacy plaintext entries from older versions are migrated automatically the first time you launch.
 - **Host keys** are pinned via `known_hosts`. The first connection trusts the key automatically; subsequent connections refuse if the key changes (potential MITM).
 - **Clipboard** integration only reads file paths the user explicitly copies (no background polling).
 - **No telemetry**, no auto-update calls, no network traffic except to the SFTP servers you configure.

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { HasSecret } from '../../wailsjs/go/main/App';
 
 const empty = {
     id: '',
@@ -16,6 +17,16 @@ export default function ServerForm({ initial, onSave, onCancel }) {
     const [authMode, setAuthMode] = useState(initial?.privateKeyPath ? 'key' : 'password');
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
+    // Whether the stored record has a saved password / passphrase. Used to
+    // tell the user the field can be left blank to keep the current secret.
+    const [hasSecret, setHasSecret] = useState({ password: false, passphrase: false });
+
+    useEffect(() => {
+        if (!initial?.id) return;
+        HasSecret(initial.id)
+            .then((r) => setHasSecret({ password: !!r?.password, passphrase: !!r?.passphrase }))
+            .catch(() => {});
+    }, [initial?.id]);
 
     const set = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
 
@@ -25,7 +36,7 @@ export default function ServerForm({ initial, onSave, onCancel }) {
             setError('Name, host and user are required.');
             return;
         }
-        if (authMode === 'password' && !data.password) {
+        if (authMode === 'password' && !data.password && !hasSecret.password) {
             setError('Password is required.');
             return;
         }
@@ -89,6 +100,7 @@ export default function ServerForm({ initial, onSave, onCancel }) {
                     type="password"
                     value={data.password}
                     onChange={set('password')}
+                    placeholder={hasSecret.password ? '(saved — leave blank to keep)' : ''}
                 />
             ) : (
                 <>
@@ -103,6 +115,7 @@ export default function ServerForm({ initial, onSave, onCancel }) {
                         type="password"
                         value={data.passphrase}
                         onChange={set('passphrase')}
+                        placeholder={hasSecret.passphrase ? '(saved — leave blank to keep)' : ''}
                     />
                 </>
             )}
