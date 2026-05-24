@@ -18,7 +18,7 @@ export function DownloadFile(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function GetServers():Promise<Array<main.ServerConfig>>;
 
-export function HasSecret(arg1:string):Promise<{[key: string]: boolean}>;
+export function HasSecret(arg1:string):Promise<Record<string, boolean>>;
 
 export function ListDirectory(arg1:string,arg2:string):Promise<Array<main.FileInfo>>;
 

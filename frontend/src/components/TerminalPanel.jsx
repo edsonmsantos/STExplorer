@@ -157,6 +157,38 @@ function TerminalInstance({ tab, visible, onClosedByServer }) {
             if (id === tab.id) onClosedByServer();
         });
 
+        // Ctrl+Shift+C / Ctrl+Shift+V for copy/paste (matches GNOME Terminal,
+        // konsole, and other Linux terminal conventions). Plain Ctrl+C is left
+        // alone so it can still send SIGINT to the running process.
+        term.attachCustomKeyEventHandler((e) => {
+            if (e.type !== 'keydown') return true;
+            const k = (e.key || '').toLowerCase();
+
+            if (e.ctrlKey && e.shiftKey && k === 'c') {
+                const sel = term.getSelection();
+                if (sel) {
+                    navigator.clipboard.writeText(sel).catch(() => {});
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+
+            if (e.ctrlKey && e.shiftKey && k === 'v') {
+                navigator.clipboard
+                    .readText()
+                    .then((text) => {
+                        if (text) SendTerminalInput(tab.id, text).catch(() => {});
+                    })
+                    .catch(() => {});
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+
+            return true;
+        });
+
         term.onData((data) => {
             SendTerminalInput(tab.id, data).catch(() => {});
         });
