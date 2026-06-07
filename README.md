@@ -7,7 +7,8 @@
     <a href="#getting-started">Getting started</a> •
     <a href="#building-from-source">Build</a> •
     <a href="#keyboard-shortcuts">Shortcuts</a> •
-    <a href="#security">Security</a>
+    <a href="#security">Security</a> •
+    <a href="#technical-context--roadmap">Roadmap</a>
   </p>
 </div>
 
@@ -128,6 +129,21 @@ wails dev
 - **No telemetry**, no auto-update calls, no network traffic except to the SFTP servers you configure.
 
 If you find a security issue, please open a private security advisory rather than a public issue.
+
+## Technical Context & Roadmap
+
+This project is a technical laboratory for exploring native integrations with Wails and Go. As such, some architectural decisions are ongoing experiments.
+
+### Known Technical Debt
+- **Config Storage:** Currently uses `servers.json` in the working directory. Planned migration to `os.UserConfigDir()` for better OS compliance.
+- **Cross-Platform Secrets:** Secure persistence is fully native on Windows (DPAPI). Support for macOS Keychain and Linux Secret Service is on the roadmap.
+- **Error Granularity:** Operations like recursive delete and tree copy currently use simplified error handling. Improving partial failure reporting is a priority.
+
+### Roadmap
+- [ ] Support for Jump Hosts / SSH Tunneling.
+- [ ] Integration with macOS Keychain.
+- [ ] Background sync/queue for large transfers.
+- [ ] Folder bookmarks/favorites.
 
 ## Platform support
 
