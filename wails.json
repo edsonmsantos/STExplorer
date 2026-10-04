@@ -2,14 +2,22 @@
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "explorer",
   "outputfilename": "STExplorer",
-  "title": "ST Explorer",
-  "description": "A simple file explorer for SFTP servers.",
+  "frontend:dir": "frontend",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "wailsjsdir": "./frontend",
+  "assetdir": "./frontend/dist",
   "author": {
     "name": "Edson M Santos",
     "email": "edsonlucianoms@gmail.com"
+  },
+  "info": {
+    "companyName": "ST Explorer",
+    "productName": "ST Explorer",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 Edson M Santos",
+    "comments": "A simple file explorer for SFTP servers."
   }
 }

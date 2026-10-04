@@ -15,6 +15,7 @@ import (
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
@@ -123,6 +124,31 @@ func buildAuthMethods(config ServerConfig) ([]ssh.AuthMethod, error) {
 
 	if config.Password != "" {
 		methods = append(methods, ssh.Password(config.Password))
+	}
+
+	if len(methods) == 0 {
+		// Try SSH agent (SSH_AUTH_SOCK)
+		if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
+			if conn, err := net.Dial("unix", sock); err == nil {
+				agentClient := agent.NewClient(conn)
+				if signers, err := agentClient.Signers(); err == nil && len(signers) > 0 {
+					methods = append(methods, ssh.PublicKeys(signers...))
+				}
+			}
+		}
+
+		// Try standard default key files in ~/.ssh/
+		if home, err := os.UserHomeDir(); err == nil {
+			for _, name := range []string{"id_ed25519", "id_rsa", "id_ecdsa"} {
+				keyPath := filepath.Join(home, ".ssh", name)
+				if keyBytes, err := os.ReadFile(keyPath); err == nil {
+					if signer, err := parsePrivateKey(keyBytes, ""); err == nil {
+						methods = append(methods, ssh.PublicKeys(signer))
+						break
+					}
+				}
+			}
+		}
 	}
 
 	if len(methods) == 0 {

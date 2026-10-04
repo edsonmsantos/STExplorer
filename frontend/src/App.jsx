@@ -671,6 +671,18 @@ function App() {
                             >
                                 <ServerIcon size={14} className={active ? 'text-white' : 'text-mac-textSoft'} />
                                 <span className="truncate text-[13px]">{server.name}</span>
+                                {server.source && (
+                                    <span
+                                        className={`ml-auto text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                                            active
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-mac-chromeAlt text-mac-textSoft border border-mac-border/40'
+                                        }`}
+                                        title={`Detectado do ${server.source === 'ssh-config' ? 'SSH Config (~/.ssh/config)' : server.source}`}
+                                    >
+                                        {server.source === 'ssh-config' ? 'SSH' : server.source}
+                                    </span>
+                                )}
                             </div>
                         );
                     })}

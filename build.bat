@@ -25,6 +25,6 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [SUCESSO] Compilacao concluida!
-echo O executavel foi gerado em: build\bin\explorer.exe
+echo O executavel foi gerado em: build\bin\STExplorer.exe
 echo.
 pause

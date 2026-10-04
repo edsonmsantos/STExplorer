@@ -1,5 +1,5 @@
 export namespace main {
-
+	
 	export class FileInfo {
 	    name: string;
 	    size: number;
@@ -7,11 +7,11 @@ export namespace main {
 	    mode: string;
 	    // Go type: time
 	    time: any;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FileInfo(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -20,7 +20,7 @@ export namespace main {
 	        this.mode = source["mode"];
 	        this.time = this.convertValues(source["time"], null);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -49,11 +49,12 @@ export namespace main {
 	    privateKeyPath?: string;
 	    passphrase?: string;
 	    highThroughput?: boolean;
-
+	    source?: string;
+	
 	    static createFrom(source: any = {}) {
 	        return new ServerConfig(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -65,7 +66,9 @@ export namespace main {
 	        this.privateKeyPath = source["privateKeyPath"];
 	        this.passphrase = source["passphrase"];
 	        this.highThroughput = source["highThroughput"];
+	        this.source = source["source"];
 	    }
 	}
 
 }
+

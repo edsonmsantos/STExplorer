@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -22,14 +24,16 @@ type ServerConfig struct {
 	// automatically so retries use the spec-safe 32 KB packets.
 	// Pointer so legacy JSON entries without the field can be detected and
 	// defaulted to true.
-	HighThroughput *bool `json:"highThroughput,omitempty"`
+	HighThroughput *bool  `json:"highThroughput,omitempty"`
+	Source         string `json:"source,omitempty"` // "ssh-config", "putty", etc.
 }
 
-// UseHighThroughput reports the effective value — defaulting to true when
-// the field is absent (new servers, or upgrades from older versions).
+// UseHighThroughput reports the effective value — defaulting to false (safe mode)
+// when the field is absent. This ensures broad compatibility with standard
+// OpenSSH and restricted SFTP servers without dropped connections.
 func (c *ServerConfig) UseHighThroughput() bool {
 	if c.HighThroughput == nil {
-		return true
+		return false
 	}
 	return *c.HighThroughput
 }
@@ -190,12 +194,118 @@ func (cm *ConfigManager) SetHighThroughput(id string, enabled bool) error {
 			return cm.saveLocked(configs)
 		}
 	}
+
+	// If it's a detected server not yet saved in servers.json, persist it
+	detected := DetectOSServers()
+	for _, d := range detected {
+		if d.ID == id {
+			d.HighThroughput = &enabled
+			d.Source = ""
+			configs = append(configs, d)
+			return cm.saveLocked(configs)
+		}
+	}
+
 	return nil
+}
+
+func (cm *ConfigManager) ignoredFilePath() string {
+	dir := filepath.Dir(cm.FilePath)
+	return filepath.Join(dir, "ignored_servers.json")
+}
+
+func (cm *ConfigManager) loadIgnoredLocked() map[string]bool {
+	ignored := make(map[string]bool)
+	data, err := os.ReadFile(cm.ignoredFilePath())
+	if err != nil {
+		return ignored
+	}
+	var list []string
+	if err := json.Unmarshal(data, &list); err == nil {
+		for _, item := range list {
+			ignored[item] = true
+		}
+	}
+	return ignored
+}
+
+func (cm *ConfigManager) saveIgnoredLocked(ignored map[string]bool) error {
+	list := make([]string, 0, len(ignored))
+	for k := range ignored {
+		list = append(list, k)
+	}
+	data, err := json.MarshalIndent(list, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(cm.ignoredFilePath(), data, 0600)
+}
+
+// GetAllServers returns saved servers merged with OS-detected servers
+// (~/.ssh/config, PuTTY) that haven't been dismissed or overridden.
+func (cm *ConfigManager) GetAllServers() ([]ServerConfig, error) {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	saved, err := cm.loadLocked()
+	if err != nil {
+		return nil, err
+	}
+
+	ignored := cm.loadIgnoredLocked()
+
+	seenIDs := make(map[string]bool)
+	seenKeys := make(map[string]bool)
+	for _, s := range saved {
+		seenIDs[s.ID] = true
+		key := fmt.Sprintf("%s:%d@%s", strings.ToLower(s.User), s.Port, strings.ToLower(s.Host))
+		seenKeys[key] = true
+	}
+
+	detected := DetectOSServers()
+	result := make([]ServerConfig, 0, len(saved)+len(detected))
+	result = append(result, saved...)
+
+	for _, d := range detected {
+		if ignored[d.ID] || ignored[d.Name] {
+			continue
+		}
+		if seenIDs[d.ID] {
+			continue
+		}
+		key := fmt.Sprintf("%s:%d@%s", strings.ToLower(d.User), d.Port, strings.ToLower(d.Host))
+		if seenKeys[key] {
+			continue
+		}
+		seenKeys[key] = true
+		result = append(result, d)
+	}
+
+	return result, nil
+}
+
+func (cm *ConfigManager) FindServer(id string) (*ServerConfig, error) {
+	all, err := cm.GetAllServers()
+	if err != nil {
+		return nil, err
+	}
+	for i := range all {
+		if all[i].ID == id {
+			return &all[i], nil
+		}
+	}
+	return nil, fmt.Errorf("server not found: %s", id)
 }
 
 func (cm *ConfigManager) Delete(id string) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
+
+	if strings.HasPrefix(id, "ssh-config:") || strings.HasPrefix(id, "putty:") {
+		ignored := cm.loadIgnoredLocked()
+		ignored[id] = true
+		_ = cm.saveIgnoredLocked(ignored)
+	}
 
 	configs, err := cm.loadLocked()
 	if err != nil {

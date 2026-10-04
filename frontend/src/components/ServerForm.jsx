@@ -10,7 +10,7 @@ const empty = {
     password: '',
     privateKeyPath: '',
     passphrase: '',
-    highThroughput: true,
+    highThroughput: false,
 };
 
 export default function ServerForm({ initial, onSave, onCancel }) {
@@ -125,15 +125,14 @@ export default function ServerForm({ initial, onSave, onCancel }) {
             <label className="mt-4 flex items-start gap-2 cursor-pointer">
                 <input
                     type="checkbox"
-                    checked={data.highThroughput !== false}
+                    checked={!!data.highThroughput}
                     onChange={(e) => setData((d) => ({ ...d, highThroughput: e.target.checked }))}
                     className="mt-0.5"
                 />
                 <span className="text-xs text-gray-700">
                     Use large SFTP packets (256 KB) for faster transfers.
                     <span className="block text-mac-textMuted mt-0.5">
-                        Recommended for standard OpenSSH servers. Disables itself automatically
-                        if the server can't handle large packets (e.g. Hetzner Storage Box).
+                        Only enable if your server supports large packets. Defaults to standard safe mode (32 KB) for broad compatibility.
                     </span>
                 </span>
             </label>

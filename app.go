@@ -81,7 +81,7 @@ func (a *App) session(serverID string) (*SFTPSession, error) {
 // secret". HighThroughput is materialized so the UI always sees a definite
 // bool (default true for legacy entries with no field).
 func (a *App) GetServers() ([]ServerConfig, error) {
-	configs, err := a.configManager.LoadConfigs()
+	configs, err := a.configManager.GetAllServers()
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +89,8 @@ func (a *App) GetServers() ([]ServerConfig, error) {
 		configs[i].Password = ""
 		configs[i].Passphrase = ""
 		if configs[i].HighThroughput == nil {
-			t := true
-			configs[i].HighThroughput = &t
+			f := false
+			configs[i].HighThroughput = &f
 		}
 	}
 	return configs, nil
@@ -100,7 +100,7 @@ func (a *App) GetServers() ([]ServerConfig, error) {
 // passphrase. Used by the edit form to display the "(saved)" hint without
 // ever sending the value to the frontend.
 func (a *App) HasSecret(serverID string) (map[string]bool, error) {
-	configs, err := a.configManager.LoadConfigs()
+	configs, err := a.configManager.GetAllServers()
 	if err != nil {
 		return nil, err
 	}
@@ -134,20 +134,9 @@ func (a *App) DeleteServer(id string) error {
 // ---------- Connection ----------
 
 func (a *App) ConnectToServer(serverID string) (string, error) {
-	configs, err := a.configManager.LoadConfigs()
+	target, err := a.configManager.FindServer(serverID)
 	if err != nil {
 		return "", err
-	}
-
-	var target *ServerConfig
-	for i := range configs {
-		if configs[i].ID == serverID {
-			target = &configs[i]
-			break
-		}
-	}
-	if target == nil {
-		return "", fmt.Errorf("server not found: %s", serverID)
 	}
 
 	// Decrypt secrets right before they hit the SSH client. The plaintext
@@ -334,6 +323,39 @@ func (a *App) uploadOne(s *SFTPSession, serverID, localPath, remoteDir string) e
 	id := a.nextTransferID()
 	cb := a.progressCallback(id, "upload", name)
 	err := s.UploadFile(localPath, remotePath, cb)
+
+	if err != nil && isConnectionDead(err) {
+		target, _ := a.configManager.FindServer(serverID)
+		if target != nil && target.UseHighThroughput() {
+			_ = a.configManager.SetHighThroughput(serverID, false)
+			f := false
+			target.HighThroughput = &f
+
+			decrypted := *target
+			decrypted.Password, _ = DecryptSecret(decrypted.Password)
+			decrypted.Passphrase, _ = DecryptSecret(decrypted.Passphrase)
+
+			if newSession, reconnErr := ConnectSFTP(decrypted); reconnErr == nil {
+				a.sessionMu.Lock()
+				if old, ok := a.sessions[serverID]; ok {
+					old.Close()
+				}
+				a.sessions[serverID] = newSession
+				a.sessionMu.Unlock()
+
+				// Retry upload with safe session (32 KB packets)
+				retryErr := newSession.UploadFile(localPath, remotePath, cb)
+				if retryErr == nil {
+					a.emitProgress(TransferEvent{
+						ID: id, Direction: "upload", FileName: name, Done: true,
+					})
+					return nil
+				}
+				err = retryErr
+			}
+		}
+	}
+
 	err = a.maybeFallbackToSafeMode(serverID, err)
 	a.emitProgress(TransferEvent{
 		ID: id, Direction: "upload", FileName: name, Done: true,
@@ -397,14 +419,7 @@ func (a *App) maybeFallbackToSafeMode(serverID string, opErr error) error {
 		return opErr
 	}
 
-	configs, _ := a.configManager.LoadConfigs()
-	var target *ServerConfig
-	for i := range configs {
-		if configs[i].ID == serverID {
-			target = &configs[i]
-			break
-		}
-	}
+	target, _ := a.configManager.FindServer(serverID)
 	if target == nil || !target.UseHighThroughput() {
 		return opErr
 	}
