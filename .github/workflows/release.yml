@@ -15,6 +15,9 @@ jobs:
   build:
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -56,18 +59,14 @@ jobs:
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      - name: Install Frontend Dependencies
-        run: npm --prefix frontend install
-
       - name: Build with Wails
         run: ${{ matrix.build_cmd }}
 
       - name: Prepare binary artifact
-        shell: bash
         run: |
           mkdir -p artifacts
           cp "${{ matrix.binary_path }}" "artifacts/${{ matrix.output_name }}"
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cp "${{ matrix.binary_path }}" "artifacts/STExplorer.exe"
           fi
 
@@ -82,6 +81,9 @@ jobs:
     name: Publish to GitHub Releases
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
