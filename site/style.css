@@ -358,6 +358,9 @@ p {
     border: 1px solid transparent;
     cursor: pointer;
 }
+.btn svg {
+    flex-shrink: 0;
+}
 .btn-large {
     padding: 16px 36px;
     font-size: 17px;

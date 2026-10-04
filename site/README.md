@@ -53,6 +53,6 @@ Any static host works — Netlify, Vercel, Cloudflare Pages, Surge, plain S3. Dr
 
 - [ ] Add screenshots in `assets/screenshots/` (see [screenshots/README.md](assets/screenshots/README.md))
 - [ ] Add `assets/og-image.png` (1200 × 630) for social previews
-- [ ] Update GitHub URLs in `index.html` if your repo name isn't `edsonsantos/STExplorer`
+- [ ] Update GitHub URLs in `index.html` if your repo name isn't `edsonmsantos/STExplorer`
 - [ ] Double-check the download link points to a real `releases/latest` once you cut one
 - [ ] Run [Lighthouse](https://pagespeed.web.dev) — target >95 on Performance / Accessibility / SEO
