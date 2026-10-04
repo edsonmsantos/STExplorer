@@ -51,7 +51,7 @@ Built with [Wails](https://wails.io) (Go backend, React frontend). Compiles to a
 ## Screenshots
 
 <p align="center">
-  <img src="site/assets/screenshots/hero.png" alt="ST Explorer column view — three columns drilled into a remote filesystem" />
+  <img src="site/assets/screenshots/hero.webp" alt="ST Explorer column view — three columns drilled into a remote filesystem" />
   <br />
   <em>Finder-style column view — drill into deep trees without losing context.</em>
 </p>
