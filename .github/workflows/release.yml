@@ -1,0 +1,111 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            output_name: STExplorer-linux-amd64
+            build_cmd: wails build -tags webkit2_41
+            binary_path: build/bin/STExplorer
+          - os: windows-latest
+            platform: windows/amd64
+            output_name: STExplorer-windows-amd64.exe
+            build_cmd: wails build
+            binary_path: build/bin/STExplorer.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install Frontend Dependencies
+        run: npm --prefix frontend install
+
+      - name: Build with Wails
+        run: ${{ matrix.build_cmd }}
+
+      - name: Prepare binary artifact
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp "${{ matrix.binary_path }}" "artifacts/${{ matrix.output_name }}"
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            cp "${{ matrix.binary_path }}" "artifacts/STExplorer.exe"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output_name }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  release:
+    name: Publish to GitHub Releases
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish Release via GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG="${{ github.ref_name }}"
+            TITLE="Release ${TAG}"
+          else
+            TAG="v1.0.${{ github.run_number }}"
+            TITLE="Release ${TAG}"
+          fi
+
+          echo "Publishing release: ${TAG} (${TITLE})"
+          gh release create "$TAG" artifacts/* \
+            --title "$TITLE" \
+            --generate-notes || \
+          gh release upload "$TAG" artifacts/* --clobber
